@@ -1,0 +1,13 @@
+## DUGETTEXT LRAW FILE ##
+[Info]
+ProgramID=$1234
+LangID=$07
+SubLangID=$01
+LangName="DEUTSCH"
+Translator="Marko Polo"
+Comments="Mail to test@example.org for additions"
+
+[Items]
+;OldText=Newtext
+Test this=Teste das hier! /n Und das erst!
+
