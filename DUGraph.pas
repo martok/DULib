@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUGraph
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Simple graphic routines
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUGraph;
 
 interface

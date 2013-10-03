@@ -1,8 +1,16 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUNumbers
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Numerical routines, conversion....
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUNumbers;
 
 interface
 
-uses SysUtils, SysConst, Math;
+uses SysUtils, SysConst, Math, windows;
 
 function StringToFloat(S:String):Double;
 function FloatToString(V:Double; DS:Char='~'):String;
@@ -18,6 +26,8 @@ function DezToX(dez, bas: Cardinal): String;
 function DecToRoman ( iDecimal: longint ): string;
 function ZahlToString(z: LongInt): string;
 function ZahlToStringEnglish(z: LongInt): string;
+
+function SwapBytes(X:DWord):DWord; overload;
 
 implementation
 
@@ -393,5 +403,13 @@ begin
     result:=result+Zahlbis999(za)+' ';
 end;
 
+function SwapBytes(X:DWord):DWord; overload;
+asm
+		mov		eax, x
+		xchg	al, ah
+		rol		eax, 16
+		xchg	al, ah
+    // eax contains result
+end;
 
 end.

@@ -1,127 +1,94 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUFileUtils
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Routines for file information
+
+ History:   2006-08-01 initial release
+            2006-10-08 fixed GetOpen/SaveFileName
+-----------------------------------------------------------------------------}
 unit DUFileUtils;
 
 interface
 
-uses Windows, SysUtils, Classes;
+uses Windows, SysUtils, Classes, Dialogs;
 
-  function ChangeExt(const FileName, NewExt: string):string;
-  function GetFileDate(const FileName:string):TDateTime;
-  function Delete(FileName:string):boolean;
-  function GetDriveNumber(drive:Char):byte;
-  function GetDiskFree(DriveNr:byte):integer;
-  function GetDiskSize(DriveNr:byte):integer;
-  function ExractExt(const FileName:string): string;
-  function ShortName(const FileName:string): string;
-  function ExtractPath(const FileName:string): string;
-  function CreateFile(const FileName:string; Mode:integer): integer;
-  procedure CloseFile(const FileName:string);
-  procedure Read(Var ReadTo; count:integer);
-  procedure Write(WriteFrom; Count:integer);
+function GetDriveNumber(drive: Char): byte;
+function GetDiskFree(DriveNr: byte): int64;
+function GetDiskSize(DriveNr: byte): int64;
 
+function GetFileSize(FileName: string): int64;
+
+function GetOpenFileName(ACaption, AFilter: string; var AFilename: string): boolean;
+function GetSaveFileName(ACaption, AFilter: string; AskOverwrite: boolean; var AFilename: string): boolean;
 
 implementation
 
-var Fil:TFileStream;
-
-
-
-function ChangeExt(const FileName, NewExt: string):string;
-var Ext:string;
+function GetFileDate(const FileName: string): TDateTime;
 begin
- if NewExt[0]<>'.' then ext:= '.' + newExt
-   else ext:=NewExt;
- Result:= ChangeFileExt(FileName,Ext);
+  result := FileDateToDateTime(FileAge(FileName));
 end;
 
-function GetFileDate(const FileName:string):TDateTime;
+function GetDriveNumber(drive: Char): byte;
 begin
- result:= FileDateToDateTime(FileAge(FileName));
+  Result := ord(UpCase(drive)) - ord('A');
+  if (Result < 1) or (Result > 26) then
+    Result := 0;
 end;
 
-function Delete(FileName:string):boolean;
+function GetDiskFree(DriveNr: byte): int64;
 begin
- Result:=DeleteFile(FileName);
+  result := DiskFree(DriveNr);
 end;
 
-function GetDriveNumber(drive:Char):byte;
+function GetDiskSize(DriveNr: byte): int64;
 begin
- Case LowerCase(Char(drive)) of
-    a: result:= 1;
-    b: result:= 2;
-    c: result:= 3;
-    d: result:= 4;
-    e: result:= 5;
-    f: result:= 6;
-    g: result:= 7;
-    h: result:= 8;
-    i: result:= 9;
-    j: result:= 10;
-    k: result:= 11;
-    l: result:= 12;
-    m: result:= 13;
-    n: result:= 14;
-    o: result:= 15;
-    p: result:= 16;
-    q: result:= 17;
-    r: result:= 18;
-    s: result:= 19;
-    t: result:= 20;
-    u: result:= 21;
-    v: result:= 22;
-    w: result:= 23;
-    x: result:= 24;
-    y: result:= 25;
-    z: result:= 26;
- end;
+  Result := DiskSize(DriveNr);
 end;
 
-
-function GetFreeDisk(DriveNr:byte):integer;
+function GetFileSize(FileName: string): Int64;
+var
+  SearchRec: TSearchRec;
 begin
-  result:= DiskFree(DriveNr);
+  if FindFirst(FileName, faAnyFile, SearchRec) = 0 then // if found
+{$WARNINGS OFF}
+    Result := Int64(SearchRec.FindData.nFileSizeHigh) shl Int64(32) + // calculate the size
+      Int64(SearchREc.FindData.nFileSizeLow)
+{$WARNINGS ON}
+  else
+    Result := -1;
+  FindClose(SearchRec);
 end;
 
-function GetDiskSize(DriveNr:byte):integer;
+function GetOpenFileName(ACaption, AFilter: string; var AFilename: string): boolean;
 begin
-  Result:=DiskSize(DriveNr);
+  with TOpenDialog.Create(nil) do try
+    Title := ACaption;
+    Filter := AFilter;
+    FileName := AFilename;
+    Result := Execute;
+    if Result then
+      AFilename := FileName;
+  finally
+    Free;
+  end;
 end;
 
-function ExractExt(const FileName:string): string;
+function GetSaveFileName(ACaption, AFilter: string; AskOverwrite: boolean; var AFilename: string): boolean;
 begin
-  result:= ExtractFileExt(FileName);
-end;
-
-function ShortName(const FileName:string): string;
-begin
-  Result:= ExtractFileName(FileName);
-end;
-
-function ExtractPath(const FileName:string): string;
-begin
-   result:= ExtractFilePath(FileName);
-end;
-
-function CreateFile(const FileName:string; Mode:word): integer;
-begin
- Fil:=TFileStream.Create(FileName,Mode);
- Result:=Fil;
-end;
-
-procedure CloseFile;
-begin
- Fil.Free;
-end;
-
-procedure Read(Var ReadTo; Count:integer): string;
-var Buffer:variant;
-begin
- Fil.Read(buffer,Count);
- ReadTo:=buffer;
-end;
-
-procedure Write(WriteFrom:variant): string;
-begin
- Fil.Write(WriteFrom,count);
+  with TSaveDialog.Create(nil) do try
+    Title := ACaption;
+    Filter := AFilter;
+    if AskOverwrite then
+      Options := Options + [ofOverwritePrompt];
+    FileName := AFilename;
+    Result := Execute;
+    if Result then
+      AFilename := FileName;
+  finally
+    Free;
+  end;
 end;
 
 end.
+

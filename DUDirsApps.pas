@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUDirsApps
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Get location of System paths, start applications, create Links
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUDirsApps;
 
 interface
@@ -40,6 +48,9 @@ const // Windows Constants:
       DIR_SYSTEM  = 1002;
       DIR_TEMP    = 1003;
 
+type
+  TQualifyRef = (qrWorkingDir, qrAppDir, qrReference);
+
 function AppendBackSlash(var Dir:string; GetAsResult:boolean=true):string;
 function RemoveBackSlash(var Dir:string; GetAsResult:boolean=true):string;
 
@@ -47,17 +58,54 @@ function RemoveBackSlash(var Dir:string; GetAsResult:boolean=true):string;
 // (other SelectDirectory functions are in FileCtrl.pas).
 function SelectDirectory(const Caption, InitialDir: String; const Root: WideString;
                          ShowStatus: Boolean; out Directory: String): Boolean;
+procedure OpenExplorer(Folder:string);
 function DirectoryExists(const Name: string): Boolean;
 procedure ForceDirectories(Dir: string);
 
+function GetTempFilename(Path:string;Prefix:string='tmp'):string;
 function GetSpecialPath(Dir:integer):string;
+function QualifyFilename(Filename:string; RelativeTo:TQualifyRef=qrWorkingDir; Reference:string=''):string;
+
 procedure StartApp(App:string;Params:string='');
 function ExecAndWait(const Filename, Params: string;
                      WindowState: word): boolean;
 function StartAndWaitForReady(FN:string):HWND;
 function FindWindowPartitial(Parent:HWND; WndName,WndClass:string):HWND;
 function GetExeForFile(const Ext: String; Execute:boolean): String;
-procedure MakeShellLink(LinkFile,Target:string);
+procedure MakeShellLink(LinkFile,Target:string;Args:string='';WorkingDir:string='';
+                        IconPath:string=''; IconNo:integer=-1);
+function TargetFromShellLink(LinkFile:string):string;
+
+function GetDriveSpace(RootPath:string;
+  var TotalSpace, FreeSpaceAvailable: Int64): Bool;
+function GetSectorSize( RootPath : string ): Cardinal;
+function IsMultiple( a : Integer; b : Integer ): Boolean;
+
+
+const
+  FO_MOVE           = ShellAPI.FO_MOVE;
+  FO_COPY           = ShellAPI.FO_COPY;
+  FO_DELETE         = ShellAPI.FO_DELETE;
+  FO_RENAME         = ShellAPI.FO_RENAME;
+
+  FOF_MULTIDESTFILES         = ShellAPI.FOF_MULTIDESTFILES   ;
+  FOF_CONFIRMMOUSE           = ShellAPI.FOF_CONFIRMMOUSE     ;
+  FOF_SILENT                 = ShellAPI.FOF_SILENT           ;  { don't create progress/report }
+  FOF_RENAMEONCOLLISION      = ShellAPI.FOF_RENAMEONCOLLISION;
+  FOF_NOCONFIRMATION         = ShellAPI.FOF_NOCONFIRMATION   ;  { Don't prompt the user. }
+  FOF_WANTMAPPINGHANDLE      = ShellAPI.FOF_WANTMAPPINGHANDLE;  { Fill in SHFILEOPSTRUCT.hNameMappings
+                                         Must be freed using SHFreeNameMappings }
+  FOF_ALLOWUNDO              = ShellAPI.FOF_ALLOWUNDO     ;
+  FOF_FILESONLY              = ShellAPI.FOF_FILESONLY     ;  { on *.*, do only files }
+  FOF_SIMPLEPROGRESS         = ShellAPI.FOF_SIMPLEPROGRESS;  { means don't show names of files }
+  FOF_NOCONFIRMMKDIR         = ShellAPI.FOF_NOCONFIRMMKDIR;  { don't confirm making any needed dirs }
+  FOF_NOERRORUI              = ShellAPI.FOF_NOERRORUI     ;  { don't put up error UI }
+
+
+function FileOperation(Sources:TStrings;Target:string;Action,Flags:DWORD):boolean; overload;
+function FileOperation(Source,Target:string;Action,Flags:DWORD):boolean;overload;
+
+function FixFileName(FN:String):string;
 
 implementation
 
@@ -101,10 +149,8 @@ end;
 
 function SelectDirectory(const Caption, InitialDir: String; const Root: WideString;
                          ShowStatus: Boolean; out Directory: String): Boolean;
-
 // Another browse-for-folder function with the ability to select an intial directory
 // (other SelectDirectory functions are in FileCtrl.pas).
-
 var
   BrowseInfo: TBrowseInfo;
   Buffer: PChar;
@@ -162,6 +208,12 @@ begin
 end;
 // End of Code by: 1999-2003 Dipl. Ing. Mike Lischke
 
+procedure OpenExplorer(Folder:string);
+begin
+  if DirectoryExists(Folder) then
+    ShellExecute(0,'explore',pchar(Folder),nil,nil,SW_SHOWNORMAL);
+end;
+
 function DirectoryExists(const Name: string): Boolean;
 var
   Code: Integer;
@@ -172,6 +224,7 @@ end;
 
 procedure ForceDirectories(Dir: string);
 begin
+{$IFNDEF VER150}
   if Length(Dir) = 0 then
     raise Exception.Create(SCannotCreateDir);
   while (AnsiLastChar(Dir) <> nil) and (AnsiLastChar(Dir)^ = '\') do
@@ -180,10 +233,14 @@ begin
     or (ExtractFilePath(Dir) = Dir) then Exit; // avoid 'xyz:\' problem.
   ForceDirectories(ExtractFilePath(Dir));
   CreateDir(Dir);
+{$ELSE}
+  SysUtils.ForceDirectories(Dir);
+{$ENDIF}
 end;
 
 function AppendBackSlash(var Dir:string; GetAsResult:boolean=true):string;
 begin
+  Result:= dir;
   if (length(Dir)>0) and (Dir[Length(dir)]<>'\') then begin
     if GetAsResult then Result:= Dir+'\' else
     Dir:= Dir+'\';
@@ -196,6 +253,14 @@ begin
     if GetAsResult then Result:= copy(Dir,1,Length(dir)-1) else
     Delete(Dir,length(dir)-1,1);
   end;
+end;
+
+function GetTempFilename(Path:string;Prefix:string='tmp'):string;
+var s: array[0..Max_Path] of char;
+begin
+  Windows.GetTempFileName(pchar(Path), pchar(Prefix), 0, s);
+  Result:= s;
+  DeleteFile(Result);
 end;
 
 function GetSpecialPath(Dir:integer):string;
@@ -215,6 +280,15 @@ begin
   end;
   p:= Path;
   Result:=AppendBackSlash(p);
+end;
+
+function QualifyFilename(Filename:string; RelativeTo:TQualifyRef=qrWorkingDir; Reference:string=''):string;
+begin
+  if RelativeTo= qrWorkingDir then Result:= ExpandFileName(Filename)
+  else begin
+    if RelativeTo=qrAppDir then Reference:= ExtractFilePath(ParamStr(0));
+    Result:= ExpandFileName(Reference+PathDelim+'.'+PathDelim+Filename);
+  end;    
 end;
 
 procedure StartApp(App:string;Params:string='');
@@ -363,22 +437,149 @@ begin
   Erase(f);
 end;
 
-procedure MakeShellLink(LinkFile,Target:string);
+procedure MakeShellLink(LinkFile,Target:string;Args:string='';WorkingDir:string='';
+                        IconPath:string=''; IconNo:integer=-1);
 var IObject: IUnknown;
   ILink: IShellLink;
   IFile: IPersistFile;
+  ws:WideString;
 begin
-  Target := ExpandFileName(Target); //Name des verknüpften Programms
-  Target:= AnsiQuotedStr(Target,'"');
-  LinkFile:= AnsiQuotedStr(LinkFile,'"');
+//  Target := ExpandFileName(Target); //Name des verknüpften Programms
+  if WorkingDir='' then
+    WorkingDir:= ExtractFilePath(Target);
   IObject := CreateComObject(CLSID_ShellLink);
   ILink := IObject as IShellLink;
   IFile := IObject as IPersistFile;
   with ILink do begin
     SetPath(PChar(Target));
-    SetWorkingDirectory(PChar(ExtractFilePath(Target)));
+    SetArguments(PChar(Args));
+    SetWorkingDirectory(PChar(WorkingDir));
+    SetIconLocation(PChar(IconPath),IconNo);
   end;
-  IFile.Save(PWChar(LinkFile),false);
+  ws:= LinkFile;
+  IFile.Save(PWChar(ws),false);
 end;
 
+function TargetFromShellLink(LinkFile:string):string;
+const
+  MAX_FEATURE_CHARS = 38;   // maximum chars in MSI feature name
+var
+  Res: HResult;
+  ShellLink: IShellLink;
+  PersistFile: IPersistFile;
+  LinkName: array[0..Max_Path-1] of WideChar;
+  Buffer: string;
+  Win32FindData: TWin32FindData;
+  FullPath: string;
+begin
+  ShellLink:=  CreateComObject(CLSID_ShellLink) as IShellLink;
+
+    PersistFile := ShellLink as IPersistFile;
+    // PersistFile.Load fails if the filename is not fully qualified
+    FullPath := ExpandFileName(LinkFile);
+    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, PChar(FullPath), -1, LinkName, MAX_PATH);
+    Res := PersistFile.Load(LinkName, STGM_READ);
+
+    if Succeeded(Res) then
+    begin
+      Res := ShellLink.Resolve(0, SLR_ANY_MATCH or SLR_NO_UI);
+
+      if Succeeded(Res) then
+      begin
+        SetLength(Buffer, MAX_PATH);
+
+        ShellLink.GetPath(PChar(Buffer), MAX_PATH, Win32FindData, SLGP_SHORTPATH);
+        Result:= PChar(Buffer);
+      end;
+    end;
+end;
+
+function GetDriveSpace(RootPath:string;
+  var TotalSpace, FreeSpaceAvailable: Int64): Bool;
+begin
+  Result := GetDiskFreeSpaceEx(PChar(RootPath), FreeSpaceAvailable, TotalSpace, nil);
+end;
+
+
+function GetSectorSize( RootPath : string ): Cardinal;
+var
+  sectorsPerCluster : DWORD;
+  bytesPerSector : DWORD;
+  numberOfFreeClusters : DWORD;
+  totalNumberOfClusters : DWORD;
+begin
+  Win32Check(
+    GetDiskFreeSpace( PChar(ExtractFileDrive(RootPath)),
+                      sectorsPerCluster, bytesPerSector, numberOfFreeClusters,
+                      totalNumberOfClusters ) );
+  Result := bytesPerSector;
+end;
+
+function IsMultiple( a : Integer; b : Integer ): Boolean;
+begin
+  Result := (a mod b) = 0;
+end;
+
+function FileOperation(Sources:TStrings;Target:string;Action,Flags:DWORD):boolean;
+var Operation : TSHFileOpStruct;
+    i         : integer;
+    Quellen   : string;
+begin
+  with Operation do begin
+    {Parent Window}
+    wnd:= GetDesktopWindow;
+    {was soll gemacht werden?}
+    wFunc:=Action;
+
+    {Quelldateien nach pFrom kopieren}
+    Quellen:='';
+    if Sources<>nil then begin
+      for i:=0 to Sources.Count-1 do
+        Quellen:=Quellen+Sources[i]+#0;
+      Quellen:=Quellen+#0;
+    end;
+    pFrom:=PChar(Quellen);
+
+    {Zielverzeichnis nach pTo kopieren}
+    pTo:=PChar(Target);
+
+    {Titel der Fortschrittanzeige}
+    case Action of
+      FO_Delete : lpszProgressTitle:='Dateien löschen';
+      FO_Copy   : lpszProgressTitle:='Dateien kopieren';
+      FO_Move   : lpszProgressTitle:='Dateien verschieben';
+      FO_Rename : lpszProgressTitle:='Dateien umbenennen';
+    end;
+
+    fFlags:= Flags;
+  end;
+
+  {Und los gehts!}
+  SetLastError(NO_ERROR);
+  Result:=SHFileOperation(Operation)=0;
+end;
+
+function FileOperation(Source,Target:string;Action,Flags:DWORD):boolean;
+var src:TStringList;
+begin
+  Src:= TStringList.Create;
+  try
+    Src.Text:= Source;
+    Result:= FileOperation(src,Target,Action,Flags);
+  finally
+    Src.Free;
+  end;
+end;
+
+function FixFileName(FN:String):string;
+var i:integer;
+begin
+  Result:= FN;
+  for i:= 1 to length(Result) do
+    if Result[i] in ['/','\',':','*','"','?','<','>','|'] then
+      Result[i]:= '-';
+end;
+
+initialization
+  CoInitialize(nil);
 end.

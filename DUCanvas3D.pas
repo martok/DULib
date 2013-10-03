@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUCanvas3D
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   3 Dimensional Canvas class. Uses simple projection.
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUCanvas3D;
 
 interface

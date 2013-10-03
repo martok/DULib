@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUSound
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Produce beeps via the system speaker (on Win9x and NT/2k/XP)
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUSound;
 
 

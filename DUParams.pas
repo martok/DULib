@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUParams
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Simple acces to command line parameters in the form paramname=paramvalue
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUParams;
 
 interface
@@ -15,6 +23,7 @@ procedure RebuildParamList;
 function GetPrmValue(Index:integer):string; overload;
 function GetPrmValue(Name:string):string;   overload;
 function ParamExists(Name:string):boolean;
+function CatParams(First,Last:integer; Quote:boolean=false):string;
 
 implementation
 
@@ -28,7 +37,7 @@ end;
 
 function GetPrmValue(Index:integer):string;
 begin
-  Result:= GetPrmValue(ParamList.Names[Index]);
+  Result:= ParamList.ValueFromIndex[Index];
 end;
 
 function GetPrmValue(Name:string):string;
@@ -38,7 +47,22 @@ end;
 
 function ParamExists(Name:string):boolean;
 begin
-  Result:= ParamList.IndexOf(Name)>-1;
+  Result:= (ParamList.IndexOfName(Name)>-1) or
+           (ParamList.IndexOf(Name)>-1);
+end;
+
+function CatParams(First,Last:integer; Quote:boolean=false):string;
+var i:integer;
+begin
+  if Quote then begin
+    Result:= '"'+ParamStr(First)+'"';
+    for i:= First+1 to Last do
+      Result:= Result+' "'+ParamStr(i)+'"';
+  end else begin
+    Result:= ParamStr(First);
+    for i:= First+1 to Last do
+      Result:= Result+' '+ParamStr(i);
+  end;
 end;
 
 procedure BuildParamList;

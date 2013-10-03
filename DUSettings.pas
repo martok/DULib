@@ -1,24 +1,44 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUSettings
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Use Mozilla-like configuration files or INIs through a simple
+            object interface.
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUSettings;
 
 interface
 
-uses Classes, IniFiles, SysUtils, DUStrings, DUNumbers;
+uses Classes, IniFiles, SysUtils, DUStrings, DUNumbers, Graphics;
 
 type
+  TGlobalSettings = class;
+
+  TPref = class
+    FSettings:TGlobalSettings;
+  private
+  public
+  end;
+
+
+
   TGlobalSettings = class
   private
     FIniStyle: boolean;
     FFileName: String;
     FDelimiter: char;
     function GetBool(const Name: string): boolean;
+    function GetColor(const Name: string): TColor;
     function GetFloat(const Name: string): Double;
     function GetInteger(const Name: string): int64;
     function GetString(const Name: string): string;
     procedure SetBool(const Name: string; const Value: boolean);
+    procedure SetColor(const Name: string; const Value: TColor);
     procedure SetFloat(const Name: string; const Value: Double);
     procedure SetInteger(const Name: string; const Value: int64);
     procedure SetString(const Name, Value: string);
-
   protected
     OrigFile, Settings:TStringList;
     function GetRaw(Name:string):string;
@@ -38,6 +58,7 @@ type
     property PrefInteger[const Name: string]: int64   read GetInteger write SetInteger;
     property PrefBoolean[const Name: string]: boolean read GetBool    write SetBool;
     property PrefFloat  [const Name: string]: Double  read GetFloat   write SetFloat;
+    property PrefColor  [const Name: string]: TColor  read GetColor   write SetColor;
   end;
 
 
@@ -126,52 +147,9 @@ begin
   end;
 end;
 
-function TGlobalSettings.GetBool(const Name: string): boolean;
-var S:String;
-begin
-  S:= GetRaw(Name);
-  Result:= (CompareText(S,'false')<>0) and (S>'') and (S<>'0');
-end;
-
-function TGlobalSettings.GetFloat(const Name: string): Double;
-var S:String;
-begin
-  S:= GetRaw(Name);
-  Result:= StringToFloat(S);
-end;
-
-function TGlobalSettings.GetInteger(const Name: string): int64;
-begin
-  Result:= StrToInt64(GetRaw(Name));
-end;
-
 function TGlobalSettings.GetRaw(Name: string): string;
 begin
   Result:= Settings.Values[Name];
-end;
-
-function TGlobalSettings.GetString(const Name: string): string;
-begin
-  Result:= GetRaw(Name);
-  Result:= ExtractQuotedString(Result,Quote);
-end;
-
-procedure TGlobalSettings.SetBool(const Name: string;
-  const Value: boolean);
-begin
-  SetRaw(Name,BoolStrs[Value]);
-end;
-
-procedure TGlobalSettings.SetFloat(const Name: string;
-  const Value: Double);
-begin
-  SetRaw(Name,FloatToString(Value,DeciPoint));
-end;
-
-procedure TGlobalSettings.SetInteger(const Name: string;
-  const Value: int64);
-begin
-  SetRaw(Name,IntToStr(Value));
 end;
 
 procedure TGlobalSettings.SetRaw(Name, Value: String);
@@ -183,11 +161,71 @@ begin
   Settings.Sorted:= true;
 end;
 
+
+//-----  String
+function TGlobalSettings.GetString(const Name: string): string;
+begin
+  Result:= GetRaw(Name);
+  Result:= ExtractQuotedString(Result,Quote);
+end;
+
 procedure TGlobalSettings.SetString(const Name, Value: string);
 begin
   SetRaw(Name,QuotedString(Value,Quote));
 end;
 
+//-----  Integer
+function TGlobalSettings.GetInteger(const Name: string): int64;
+begin
+  Result:= StrToInt64(GetRaw(Name));
+end;
+
+procedure TGlobalSettings.SetInteger(const Name: string; const Value: int64);
+begin
+  SetRaw(Name,IntToStr(Value));
+end;
+
+//-----  Float
+function TGlobalSettings.GetFloat(const Name: string): Double;
+var S:String;
+begin
+  S:= GetRaw(Name);
+  Result:= StringToFloat(S);
+end;
+
+procedure TGlobalSettings.SetFloat(const Name: string; const Value: Double);
+begin
+  SetRaw(Name,FloatToString(Value,DeciPoint));
+end;
+
+//-----  Boolean
+function TGlobalSettings.GetBool(const Name: string): boolean;
+var S:String;
+begin
+  S:= GetRaw(Name);
+  Result:= (CompareText(S,'false')<>0) and (S>'') and (S<>'0');
+end;
+
+procedure TGlobalSettings.SetBool(const Name: string; const Value: boolean);
+begin
+  SetRaw(Name,BoolStrs[Value]);
+end;
+
+//-----  Color
+function TGlobalSettings.GetColor(const Name: string): TColor;
+var S:String;
+begin
+  S:= GetRaw(Name);
+  if s='' then
+    Result:= clNone
+  else
+    Result:= StringToColor(s);
+end;
+
+procedure TGlobalSettings.SetColor(const Name: string; const Value: TColor);
+begin
+  SetRaw(Name, ColorToString(Value));
+end;
 
 initialization
   GlobalSettings:= TGlobalSettings.Create;

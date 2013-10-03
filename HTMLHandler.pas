@@ -2,13 +2,13 @@ unit HTMLHandler;
 
 interface
 
-uses classes,sysutils, WinInet;
+uses Windows, classes,sysutils, WinInet;
 
 function GetTempFolder: String;
 
 Function GetHTML(AUrl: string): string;
 Function GiveSZ (HCode : String) : Char;
-procedure HTML2Text(InFile, OutFile : String);
+procedure HTML2TextFile(InFile, OutFile : String);
 procedure HTML2Text(Html: String; var Plain : String);
 
 implementation
@@ -26,7 +26,7 @@ Function GetHTML(AUrl: string): string;
 var
   databuffer : array[0..4095] of char;
   ResStr : string;
-  hSession, hfile, hRequest: hInternet;
+  hSession, hfile: hInternet;
   dwindex,dwcodelen,datalen,dwread,dwNumber: cardinal;
   dwcode : array[1..20] of char;
   res    : pchar;
@@ -188,15 +188,12 @@ Begin
   if (HCode='&yuml;')    or (HCode = '&#255;')      then Result := 'ÿ';
 end;
 
-procedure HTML2Text(InFile, OutFile : String);
+procedure HTML2TextFile(InFile, OutFile : String);
 var s, t: TextFile;
-  si: File;
   uml: String;
   param: char;
-  i, j: integer;
+  j: integer;
   IsTag, Umlaut: Boolean;
-  ASCII: Integer;
-  Titel: String;
 begin
   AssignFile(s,InFile);
   AssignFile(t,OutFile);
@@ -246,7 +243,7 @@ begin
 end;
 
 procedure HTML2Text(Html: String; var Plain : String);
-var fs1,fs2:TFileStream;
+var fs:TFileStream;
 begin
   try
     try
@@ -255,7 +252,7 @@ begin
     finally
       fs.Free;
     end;
-    HTML2Text(GetTempFolder+'HtmlFile.tmp',GetTempFolder+'PlainFile.tmp');
+    HTML2TextFile(GetTempFolder+'HtmlFile.tmp',GetTempFolder+'PlainFile.tmp');
     try
       fs:= TFileStream.Create(GetTempFolder+'PlainFile.tmp',fmOpenRead);
       fs.Read(Plain,fs.Size);

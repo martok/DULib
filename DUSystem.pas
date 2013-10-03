@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUSystem
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Run System functions from Libs
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUSystem;
 
 interface

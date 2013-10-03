@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUStreamUtils
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Stream utility routines, less object oriented than TStream
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUStreamUtils;
 
 interface

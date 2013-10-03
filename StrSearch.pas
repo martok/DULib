@@ -2,7 +2,12 @@ unit StrSearch;
 
 interface
 
+uses Sysutils, DUStrings;
+
+
 function Like(const AString, APattern: String): Boolean;
+function AnsiMatchPattern(InpStr,Pattern :string) :Boolean;
+function AnsiMatchPatterns(InpStr,Pattern :string) :Boolean;
 function MatchPattern(InpStr,Pattern :PChar) :Boolean;
 
 
@@ -24,6 +29,7 @@ begin
   PatternPtr:=PChar(APattern);
   StringRes:=nil;
   PatternRes:=nil;
+  if APattern='*' then begin Result:= true; exit end;
   repeat
     repeat // ohne vorangegangenes "*"
       case PatternPtr^ of
@@ -104,6 +110,11 @@ end; {Michael Winter}
 {* search and is based on the translation of PattenMatch() API   *}
 {* of common.c in MSDN Samples\VC98\sdk\sdktools\tlist           *}
 {*****************************************************************}
+{* AnsiMatchPattern works with strings and ignores case.         *}
+{*****************************************************************}
+{* AnsiMatchPatterns works for a ; delimited set of patterns     *}
+{*    returns true if any of the patterns matches.               *}
+{*****************************************************************}
 {* MetaChars are  :                                              *}
 {*            '*' : Zero or more chars.                          *}
 {*            '?' : Any one char.                                *}
@@ -116,6 +127,23 @@ end; {Michael Winter}
 {*  [ad-fhjnv-xz] : Mix of range & individual chars (inclusion). *}
 {* [^ad-fhjnv-xz] : Mix of range & individual chars (exclusion). *}
 {*****************************************************************}
+
+function AnsiMatchPattern(InpStr,Pattern :string) :Boolean;
+begin
+  Result:= MatchPattern(pchar(AnsiUpperCase(InpStr)),pchar(AnsiUpperCase(Pattern)));
+end;
+
+function AnsiMatchPatterns(InpStr,Pattern :string) :Boolean;
+var s:TStringArray;
+    i:integer;
+begin
+  s:= SplitString(Pattern,';');
+  Result:= true;
+  for i:= 0 to high(s) do
+    if AnsiMatchPattern(InpStr,s[i]) then
+      exit;
+  Result:= false;
+end;
 
 function MatchPattern(InpStr,Pattern :PChar) :Boolean;
 begin

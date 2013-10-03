@@ -49,7 +49,6 @@ IMPLEMENTATION
 {$IFDEF StreamIO}
     SysUtils,  // SysErrorMessage
 {$ENDIF}
-    Dialogs,   // ShowMessage
     Classes;   // TMemoryStream
 
   CONST

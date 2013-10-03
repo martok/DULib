@@ -61,6 +61,11 @@ const
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Curr:= TMemIniFile.Create('');
+  if ParamCount>0 then begin
+    edInFile.Text:= ParamStr(1);
+    edOutFile.Text:= ChangeFileExt(edInFile.Text,'.lang');
+    OpenFile(edInFile.Text);
+  end;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);

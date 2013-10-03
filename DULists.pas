@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DULists
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Special lists for data types
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DULists;
 
 interface

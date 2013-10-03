@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUTimeFormat
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Convert time to string
+
+ History:   2006-08-01 initial relase
+-----------------------------------------------------------------------------}
 unit DUTimeFormat;
 
 interface
@@ -113,7 +121,7 @@ begin
     chrLast:= chr;
     inc(counter);
   until counter= Length(FmtStr)+1;
-  delete(result,0,1);
+  delete(result,1,1);
 end;
 
 

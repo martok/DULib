@@ -284,12 +284,12 @@ var
   InputRec:      TInputRecord;
 begin
   Result:= #0;
-{ while not ReadConsoleInput(HConsoleInput,
+ { while not ReadConsoleInput(HConsoleInput,
                    InputRec,
                    1,
                    NumRead) or
                    (InputRec.EventType = KEY_EVENT) do ;
-  Result := InputRec.Event.KeyEvent.AsciiChar;   }
+  Result := InputRec.Event.KeyEvent.AsciiChar;    }
   while Result=#0 do
     ReadLn(result);
 end;

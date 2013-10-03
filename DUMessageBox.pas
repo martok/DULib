@@ -1,8 +1,19 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUMessageBox
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Extended message boxes
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUMessageBox;
 
 interface
 
-uses Forms, Graphics, ExtCtrls, StdCtrls, Controls, Windows, Classes;
+uses Dialogs, Forms, Graphics, ExtCtrls, StdCtrls, Controls, Windows, Classes, SysUtils;
+
+const
+  mbYesNo = [mbYes, mbNo];
 
 // Gibt gedrückten Button-Index im Array zurück:
 // Buttons sind die Beschriftungen der Schalter
@@ -12,7 +23,8 @@ function MessageDialog(ACaption,AMsg:string;Buttons:Array of string):integer;
 // Img ist das links angezeigte Bild
 function MessageDialogEx(ACaption,AMsg:string; Buttons:Array of string; Img:TGraphic):integer;
 
-
+function MessageDlgFmt(const Msg: string; Args:Array of const; DlgType: TMsgDlgType;
+  Buttons: TMsgDlgButtons; HelpCtx: Longint): Integer;
 
 implementation
 
@@ -230,6 +242,12 @@ begin
   finally
     Form1.Release;
   end;
+end;
+
+function MessageDlgFmt(const Msg: string; Args:Array of const; DlgType: TMsgDlgType;
+  Buttons: TMsgDlgButtons; HelpCtx: Longint): Integer;
+begin
+  Result:= MessageDlg(Format(Msg,Args),DlgType,Buttons,HelpCtx);
 end;
 
 end.

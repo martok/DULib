@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUAngles
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Manipulate angles
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUAngles;
 
 interface

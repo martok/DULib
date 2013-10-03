@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUStartup
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Check if a given program is set to run on startup an do this setting
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUStartup;
 
 interface

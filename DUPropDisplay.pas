@@ -1,8 +1,13 @@
-(*
-  zum Deaktivieren die glbale Variable 'NoPropViewer' auf true setzen
+{-----------------------------------------------------------------------------
+ Unit Name: DUPropDisplay
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Property display Window,
+            To deactivate, set 'NoPropViewer' to true
+            Program calls do not have to be changed
 
-  Die Programmaufrufe müssen nicht entfernt werden
-*)
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 
 
 unit DUPropDisplay;

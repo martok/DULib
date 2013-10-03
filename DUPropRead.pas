@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUPropRead
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   Read properties to stringlist
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUPropRead;
 
 interface

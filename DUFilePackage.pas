@@ -1,3 +1,11 @@
+{-----------------------------------------------------------------------------
+ Unit Name: DUFilePackage
+ Author:    Sebastian Hütter
+ Date:      2006-08-01
+ Purpose:   File packer, Index and Data file
+
+ History:   2006-08-01 initial release
+-----------------------------------------------------------------------------}
 unit DUFilePackage;
 
 interface
